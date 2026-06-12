@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from .classify import GoProClassifier
-from .config import AnalyzerConfig
+from .config import AnalyzerConfig, default_output_dir
 from .exporters import write_outputs
 from .timeline import build_unified_timeline
 
@@ -12,7 +12,12 @@ from .timeline import build_unified_timeline
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Sort GoPro videos into movement/stationary/night timelines.")
     parser.add_argument("input_dir", type=Path, help="Input folder containing videos")
-    parser.add_argument("--output-dir", type=Path, default=Path("output"), help="Output folder for timeline files")
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=default_output_dir(),
+        help="Output folder for timeline files. Defaults to $OUTPUT/gopro_video_sorting when OUTPUT is set.",
+    )
     parser.add_argument("--brightness-night-threshold", type=float, default=40.0)
     parser.add_argument("--motion-threshold", type=float, default=2.2)
     parser.add_argument("--sample-every-n-frames", type=int, default=30)

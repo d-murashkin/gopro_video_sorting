@@ -5,7 +5,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from .cli import run
-from .config import AnalyzerConfig
+from .config import AnalyzerConfig, default_output_dir, default_sample_data_dir
 
 
 class App(tk.Tk):
@@ -14,8 +14,8 @@ class App(tk.Tk):
         self.title("GoPro Video Sorting")
         self.geometry("680x260")
 
-        self.input_dir_var = tk.StringVar(value=str(Path.cwd() / "resources"))
-        self.output_dir_var = tk.StringVar(value=str(Path.cwd() / "output"))
+        self.input_dir_var = tk.StringVar(value=str(default_sample_data_dir()))
+        self.output_dir_var = tk.StringVar(value=str(default_output_dir()))
         self.status_var = tk.StringVar(value="Ready")
 
         self._build_ui()

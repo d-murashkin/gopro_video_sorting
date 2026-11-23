@@ -13,18 +13,16 @@ def _env_path(name: str) -> Path | None:
 
 def default_sample_data_dir() -> Path:
     """Return the default input folder for the current project layout."""
-    data_root = _env_path("WORKDATA")
+    data_root = _env_path("RESEARCHSAMPLES")
     if data_root is not None:
-        return data_root / "samples" / PROJECT_SLUG
+        return data_root / PROJECT_SLUG
     return Path.cwd()
 
 
 def default_output_dir() -> Path:
     """Return the default output folder for generated project artifacts."""
-    output_root = _env_path("OUTPUT")
-    if output_root is not None:
-        return output_root / PROJECT_SLUG
-    return Path.cwd() / "output"
+    output_root = _env_path("RESEARCHOUTPUT") or Path.home() / "output"
+    return output_root / PROJECT_SLUG / os.environ.get("RUN_NAME", "default")
 
 
 @dataclass

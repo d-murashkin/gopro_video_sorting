@@ -42,7 +42,7 @@ tests/
 	test_discovery.py
 	test_timeline.py
 	test_exporters.py
-$WORKDATA/samples/gopro_video_sorting/
+$RESEARCHSAMPLES/gopro_video_sorting/
 	20220304T000819S000000_GH580049.MP4
 ```
 
@@ -51,8 +51,8 @@ The repository lives inside a flat project repository:
 ```text
 gopro_video_sorting/
 	gopro_video_sorting/   # git repository
-	$WORKDATA/samples/gopro_video_sorting/       # small local sample videos
-	$OUTPUT/gopro_video_sorting/             # generated timelines, summaries, and clip scripts
+	$RESEARCHSAMPLES/gopro_video_sorting/       # small local sample videos
+	$RESEARCHOUTPUT/gopro_video_sorting/             # generated timelines, summaries, and clip scripts
 ```
 
 ## Requirements
@@ -72,14 +72,14 @@ uv sync
 From repository root:
 
 ```bash
-uv run python -m gopro_sorting.cli $WORKDATA --output-dir $OUTPUT/gopro_video_sorting
+uv run python -m gopro_sorting.cli $RESEARCHDATA --output-dir $RESEARCHOUTPUT/gopro_video_sorting
 ```
 
 Optional tuning:
 
 ```bash
-uv run python -m gopro_sorting.cli $WORKDATA \
-	--output-dir $OUTPUT/gopro_video_sorting \
+uv run python -m gopro_sorting.cli $RESEARCHDATA \
+	--output-dir $RESEARCHOUTPUT/gopro_video_sorting \
 	--brightness-night-threshold 40 \
 	--motion-threshold 2.2 \
 	--sample-every-n-frames 30 \
@@ -91,31 +91,31 @@ uv run python -m gopro_sorting.cli $WORKDATA \
 ## Run: GUI
 
 ```bash
-PYTHONPATH=src python -m gopro_sorting.gui
+uv run python -m gopro_sorting.gui
 ```
 
 Pick input/output folders and click `Run analysis`.
 
 ## Output Files
 
-- `$OUTPUT/gopro_video_sorting/timeline.csv`
+- `$RESEARCHOUTPUT/gopro_video_sorting/timeline.csv`
 	- Spreadsheet-friendly timeline of all segments.
-- `$OUTPUT/gopro_video_sorting/timeline.json`
+- `$RESEARCHOUTPUT/gopro_video_sorting/timeline.json`
 	- Structured version of the timeline.
-- `$OUTPUT/gopro_video_sorting/summary.json`
+- `$RESEARCHOUTPUT/gopro_video_sorting/summary.json`
 	- Durations by class and low-confidence segment list.
-- `$OUTPUT/gopro_video_sorting/cut_by_label.sh`
+- `$RESEARCHOUTPUT/gopro_video_sorting/cut_by_label.sh`
 	- Shell script containing ffmpeg commands to cut each segment into:
-		- `$OUTPUT/gopro_video_sorting/clips/movement/`
-		- `$OUTPUT/gopro_video_sorting/clips/stationary/`
-		- `$OUTPUT/gopro_video_sorting/clips/night/`
+		- `$RESEARCHOUTPUT/gopro_video_sorting/clips/movement/`
+		- `$RESEARCHOUTPUT/gopro_video_sorting/clips/stationary/`
+		- `$RESEARCHOUTPUT/gopro_video_sorting/clips/night/`
 
 ## How to Cut Videos by Type
 
 After generating output files:
 
 ```bash
-$OUTPUT/gopro_video_sorting/cut_by_label.sh
+$RESEARCHOUTPUT/gopro_video_sorting/cut_by_label.sh
 ```
 
 This creates per-segment clips organized by class.
@@ -125,28 +125,28 @@ This creates per-segment clips organized by class.
 Example: create one ordered list with `night` clips first, then `stationary`, then `movement`.
 
 ```bash
-find $OUTPUT/gopro_video_sorting/clips/night -type f -name '*.mp4' | sort > $OUTPUT/gopro_video_sorting/night.list
-find $OUTPUT/gopro_video_sorting/clips/stationary -type f -name '*.mp4' | sort > $OUTPUT/gopro_video_sorting/stationary.list
-find $OUTPUT/gopro_video_sorting/clips/movement -type f -name '*.mp4' | sort > $OUTPUT/gopro_video_sorting/movement.list
-cat $OUTPUT/gopro_video_sorting/night.list $OUTPUT/gopro_video_sorting/stationary.list $OUTPUT/gopro_video_sorting/movement.list > $OUTPUT/gopro_video_sorting/reordered.list
+find $RESEARCHOUTPUT/gopro_video_sorting/clips/night -type f -name '*.mp4' | sort > $RESEARCHOUTPUT/gopro_video_sorting/night.list
+find $RESEARCHOUTPUT/gopro_video_sorting/clips/stationary -type f -name '*.mp4' | sort > $RESEARCHOUTPUT/gopro_video_sorting/stationary.list
+find $RESEARCHOUTPUT/gopro_video_sorting/clips/movement -type f -name '*.mp4' | sort > $RESEARCHOUTPUT/gopro_video_sorting/movement.list
+cat $RESEARCHOUTPUT/gopro_video_sorting/night.list $RESEARCHOUTPUT/gopro_video_sorting/stationary.list $RESEARCHOUTPUT/gopro_video_sorting/movement.list > $RESEARCHOUTPUT/gopro_video_sorting/reordered.list
 ```
 
 Convert into ffmpeg concat format:
 
 ```bash
-awk '{print "file '\''" $0 "'\''"}' $OUTPUT/gopro_video_sorting/reordered.list > $OUTPUT/gopro_video_sorting/concat.txt
+awk '{print "file '\''" $0 "'\''"}' $RESEARCHOUTPUT/gopro_video_sorting/reordered.list > $RESEARCHOUTPUT/gopro_video_sorting/concat.txt
 ```
 
 Render one merged playback video:
 
 ```bash
-ffmpeg -y -f concat -safe 0 -i $OUTPUT/gopro_video_sorting/concat.txt -c copy $OUTPUT/gopro_video_sorting/reordered_merged.mp4
+ffmpeg -y -f concat -safe 0 -i $RESEARCHOUTPUT/gopro_video_sorting/concat.txt -c copy $RESEARCHOUTPUT/gopro_video_sorting/reordered_merged.mp4
 ```
 
 If stream-copy concat fails due to codec differences, re-encode:
 
 ```bash
-ffmpeg -y -f concat -safe 0 -i $OUTPUT/gopro_video_sorting/concat.txt -c:v libx264 -c:a aac $OUTPUT/gopro_video_sorting/reordered_merged_reencoded.mp4
+ffmpeg -y -f concat -safe 0 -i $RESEARCHOUTPUT/gopro_video_sorting/concat.txt -c:v libx264 -c:a aac $RESEARCHOUTPUT/gopro_video_sorting/reordered_merged_reencoded.mp4
 ```
 
 ## Threshold Tuning Tips
@@ -163,7 +163,7 @@ ffmpeg -y -f concat -safe 0 -i $OUTPUT/gopro_video_sorting/concat.txt -c:v libx2
 ## Tests
 
 ```bash
-PYTHONPATH=src pytest -q
+uv run pytest -q
 ```
 
 ## Notes

@@ -1,0 +1,184 @@
+Metadata-Version: 2.4
+Name: gopro_video_sorting
+Version: 0.1.0
+Summary: GoPro Video Sorting
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.26
+Requires-Dist: opencv-python>=4.9
+Requires-Dist: pandas>=2.2
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2; extra == "dev"
+
+# GoPro Video Sorting
+
+This project analyzes GoPro videos from a folder and classifies timeline segments into:
+
+- `movement`
+- `stationary`
+- `night`
+
+It produces a single unified timeline across all videos in the folder and exports practical files for review and editing.
+
+## Features
+
+- Folder scan for common video formats (`.mp4`, `.mov`, `.mkv`, `.avi`)
+- Start-time inference from GoPro filename pattern like `20220304T000819S000000_GH580049.MP4`
+- Night detection based on frame brightness
+- Large-motion detection based on optical flow (smoothed to avoid small jitter noise)
+- Unified timeline sorted by absolute start time across all videos
+- Export outputs:
+	- `timeline.csv`
+	- `timeline.json`
+	- `summary.json`
+	- `cut_by_label.sh` (ready-to-run ffmpeg cut commands)
+
+## Project Structure
+
+```text
+src/gopro_sorting/
+	__init__.py
+	config.py
+	models.py
+	discovery.py
+	analyze_brightness.py
+	analyze_motion.py
+	classify.py
+	timeline.py
+	exporters.py
+	edit_script.py
+	cli.py
+	gui.py
+tests/
+	conftest.py
+	test_discovery.py
+	test_timeline.py
+	test_exporters.py
+$RESEARCHSAMPLES/gopro_video_sorting/
+	20220304T000819S000000_GH580049.MP4
+```
+
+The repository lives inside a flat project repository:
+
+```text
+gopro_video_sorting/
+	gopro_video_sorting/   # git repository
+	$RESEARCHSAMPLES/gopro_video_sorting/       # small local sample videos
+	$RESEARCHOUTPUT/gopro_video_sorting/             # generated timelines, summaries, and clip scripts
+```
+
+## Requirements
+
+- Linux
+- Python 3.11+
+- `ffmpeg` installed in PATH (for clip cutting/rearranging workflow)
+
+Install Python dependencies:
+
+```bash
+uv sync
+```
+
+## Run: CLI
+
+From repository root:
+
+```bash
+uv run python -m gopro_sorting.cli $RESEARCHDATA --output-dir $RESEARCHOUTPUT/gopro_video_sorting
+```
+
+Optional tuning:
+
+```bash
+uv run python -m gopro_sorting.cli $RESEARCHDATA \
+	--output-dir $RESEARCHOUTPUT/gopro_video_sorting \
+	--brightness-night-threshold 40 \
+	--motion-threshold 2.2 \
+	--sample-every-n-frames 30 \
+	--min-segment-seconds 3.0 \
+	--confidence-floor 0.55 \
+	--max-analysis-seconds 120
+```
+
+## Run: GUI
+
+```bash
+uv run python -m gopro_sorting.gui
+```
+
+Pick input/output folders and click `Run analysis`.
+
+## Output Files
+
+- `$RESEARCHOUTPUT/gopro_video_sorting/timeline.csv`
+	- Spreadsheet-friendly timeline of all segments.
+- `$RESEARCHOUTPUT/gopro_video_sorting/timeline.json`
+	- Structured version of the timeline.
+- `$RESEARCHOUTPUT/gopro_video_sorting/summary.json`
+	- Durations by class and low-confidence segment list.
+- `$RESEARCHOUTPUT/gopro_video_sorting/cut_by_label.sh`
+	- Shell script containing ffmpeg commands to cut each segment into:
+		- `$RESEARCHOUTPUT/gopro_video_sorting/clips/movement/`
+		- `$RESEARCHOUTPUT/gopro_video_sorting/clips/stationary/`
+		- `$RESEARCHOUTPUT/gopro_video_sorting/clips/night/`
+
+## How to Cut Videos by Type
+
+After generating output files:
+
+```bash
+$RESEARCHOUTPUT/gopro_video_sorting/cut_by_label.sh
+```
+
+This creates per-segment clips organized by class.
+
+## How to Rearrange Videos by Type
+
+Example: create one ordered list with `night` clips first, then `stationary`, then `movement`.
+
+```bash
+find $RESEARCHOUTPUT/gopro_video_sorting/clips/night -type f -name '*.mp4' | sort > $RESEARCHOUTPUT/gopro_video_sorting/night.list
+find $RESEARCHOUTPUT/gopro_video_sorting/clips/stationary -type f -name '*.mp4' | sort > $RESEARCHOUTPUT/gopro_video_sorting/stationary.list
+find $RESEARCHOUTPUT/gopro_video_sorting/clips/movement -type f -name '*.mp4' | sort > $RESEARCHOUTPUT/gopro_video_sorting/movement.list
+cat $RESEARCHOUTPUT/gopro_video_sorting/night.list $RESEARCHOUTPUT/gopro_video_sorting/stationary.list $RESEARCHOUTPUT/gopro_video_sorting/movement.list > $RESEARCHOUTPUT/gopro_video_sorting/reordered.list
+```
+
+Convert into ffmpeg concat format:
+
+```bash
+awk '{print "file '\''" $0 "'\''"}' $RESEARCHOUTPUT/gopro_video_sorting/reordered.list > $RESEARCHOUTPUT/gopro_video_sorting/concat.txt
+```
+
+Render one merged playback video:
+
+```bash
+ffmpeg -y -f concat -safe 0 -i $RESEARCHOUTPUT/gopro_video_sorting/concat.txt -c copy $RESEARCHOUTPUT/gopro_video_sorting/reordered_merged.mp4
+```
+
+If stream-copy concat fails due to codec differences, re-encode:
+
+```bash
+ffmpeg -y -f concat -safe 0 -i $RESEARCHOUTPUT/gopro_video_sorting/concat.txt -c:v libx264 -c:a aac $RESEARCHOUTPUT/gopro_video_sorting/reordered_merged_reencoded.mp4
+```
+
+## Threshold Tuning Tips
+
+- Too many clips labeled `movement`:
+	- Increase `--motion-threshold`.
+- Movement missed during strong ship/camera movement:
+	- Decrease `--motion-threshold`.
+- Too many clips labeled `night`:
+	- Decrease `--brightness-night-threshold` sensitivity by lowering threshold value.
+- Night not detected enough:
+	- Raise `--brightness-night-threshold`.
+
+## Tests
+
+```bash
+uv run pytest -q
+```
+
+## Notes
+
+- Filename timestamp parsing assumes UTC for GoPro-style names.
+- If filename pattern is missing, file modification time is used as fallback for timeline ordering.

@@ -1,22 +1,15 @@
-from pathlib import Path
-
 from gopro_sorting.config import default_output_dir, default_sample_data_dir
 
 
-def test_default_paths_follow_data_and_output_env(monkeypatch, tmp_path) -> None:
-    data_root = tmp_path / "data"
-    output_root = tmp_path / "output-root"
-    monkeypatch.setenv("WORKDATA", str(data_root))
-    monkeypatch.setenv("OUTPUT", str(output_root))
+def test_sample_root_is_independent_and_output_is_run_scoped(monkeypatch, tmp_path) -> None:
+    sample_root = tmp_path / "sample-store"
+    output_root = tmp_path / "output-store"
+    monkeypatch.setenv("RESEARCHDATA", str(tmp_path / "unrelated-data"))
+    monkeypatch.setenv("RESEARCHSAMPLES", str(sample_root))
+    monkeypatch.setenv("RESEARCHOUTPUT", str(output_root))
+    monkeypatch.setenv("RUN_NAME", "2026-09-10-migration")
 
-    assert default_sample_data_dir() == data_root / "samples" / "gopro_video_sorting"
-    assert default_output_dir() == output_root / "gopro_video_sorting"
+    assert default_sample_data_dir() == sample_root / "gopro_video_sorting"
+    assert default_output_dir() == output_root / "gopro_video_sorting" / "2026-09-10-migration"
 
 
-def test_default_paths_have_local_fallback(monkeypatch, tmp_path) -> None:
-    monkeypatch.delenv("WORKDATA", raising=False)
-    monkeypatch.delenv("OUTPUT", raising=False)
-    monkeypatch.chdir(tmp_path)
-
-    assert default_sample_data_dir() == Path.cwd()
-    assert default_output_dir() == tmp_path / "output"

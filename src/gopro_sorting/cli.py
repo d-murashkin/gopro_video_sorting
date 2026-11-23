@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=default_output_dir(),
-        help="Output folder for timeline files. Defaults to $OUTPUT/gopro_video_sorting when OUTPUT is set.",
+        help="Output folder for timeline files. Defaults to $RESEARCHOUTPUT/gopro_video_sorting/${RUN_NAME:-default}.",
     )
     parser.add_argument("--brightness-night-threshold", type=float, default=40.0)
     parser.add_argument("--motion-threshold", type=float, default=2.2)
